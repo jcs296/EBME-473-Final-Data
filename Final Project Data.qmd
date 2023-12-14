@@ -1,0 +1,208 @@
+---
+title: "SYBB 421 Final Project Data Analysis"
+author: "John Snell"
+date: last-modified
+format: 
+  html:
+    toc: true
+    embed-resources: true 
+    number-sections: true
+    date-format: iso
+    theme: materia
+---
+## Setup
+
+```{r load libraries}
+library(broom)
+library(knitr)
+library(readxl)
+library(tidyverse)
+
+theme_set(theme_bw())
+```
+
+```{r setup data}
+datafile <- read_xlsx("SYBB421_project_data.xlsx")
+datafile <- datafile %>%
+  mutate(as.factor(language)) %>%
+  mutate(as.factor(publicly_available)) %>%
+  mutate(as.factor(runnable)) %>%
+  mutate(as.factor(pretrained)) %>%
+  mutate(as.factor(retrainable)) %>%
+  mutate(as.factor(physician)) %>%
+  mutate(as.factor(custom_interface)) %>%
+  mutate(as.factor(meaningful))
+
+datafile2 <- datafile[-c(10:12,23,26,30),]
+```
+
+## Data Description
+
+Column  |  Description
+:----:  |  :---------:
+paper_title  |  Title of paper that was analyzed.
+link  |  A link to access the original paper.
+first_author  |  First Author of the paper.
+year  |  Year of paper publication.
+model  |  Name of AI or ML model from the paper.  NA indicates that model name was not given or could not be found.
+language  |  Programming language used to generate the model.
+publicly_available  |  A description of whether the model is available publicly, as a paid model, or not available.
+runnable  |  Model was found to be contemporaneously runnable in some capacity.  NA indicates that runnability was not verifiable.
+pretrained  |  Whether the model is available in a pre-trained state or not.  NA indicates that this status could not be verified.
+retrainable  |  Whether the model is able to be retrained by the end user.  NA indicates that this status could not be verified.
+physician  |  Whether the model was tested or compared alongside or against trained physicians.
+custom_interface  |  Whether the model uses a custom interface.  NA indicates that this status could not be verified.
+meaningful  |  Summary of notes comment as to likelihood of model having a meaningful application case.
+notes  |  Notes regarding the model, typically surrounding reported efficacy from a statistical standpoint.
+model_location  |  A link to accesss the model if available, or the closest link that could be found if not.  NA indicates that the model location could not be determined.
+
+datafile will contain the complete original data.
+
+datafile2 will remove known duplicate models.  Duplicate models were analyzed under unique circumstances in some papers, and will only be considered as relevant.
+
+# Principle 1: AI tools should aim to alleviate existing health disparities
+
+Access to healthcare tools is a major means by which health disparities are perpetuated.  Likewise, increasing access is a means by which health disparities can be alleviated.  This will be measured by looking at whether unique models that were looked at in the data are publicly available or not.  Simultaneously, models that utilize user interfaces improve usability by less specialized users, improving utility in regions with greater health disparities.
+
+```{r Principle 1}
+ggplot(datafile2, aes(x = publicly_available)) +
+  geom_bar(fill = "red") +
+  labs(x = "Model Avalability Group",
+       y = "Number of Models",
+       title = "Model Availability")
+
+ggplot(datafile2, aes(x = custom_interface)) +
+  geom_bar(fill = "red") +
+  labs(x = "Custom Interface Group",
+       y = "Number of Models",
+       title = "Custom Interface Index")
+
+# Table of Relationship Between Above Graphs
+table(datafile2$publicly_available, datafile2$custom_interface, useNA = "ifany") %>%
+  kable()
+```
+
+For model availability:
+`r 23/36 * 100`% of models were not available at all.
+`r 8/36 * 100`% of models were available in a paid format.  Pricing was not immediately available.
+`r 1/36 * 100`% of models were not directly available, but could be shortly reconstituted via materials on github.
+`r 4/36 * 100`% of models were publicly freely available
+
+For model retrainability:
+`r 3/36 * 100`% of models did not utilize a custom interface, and instead required terminal interaction of some sort.
+`r 7/36 * 100`% of models did utilize a custom interface of some sort.
+`r 26/36 * 100`% of models could not be verified on whether they utilized custom interfaces for the end user.
+
+# Principle 2: Outcomes of AI tools should be clinically meaningful
+
+This metric is challenging to analyze, but it is easy to generate AI models that have no "true" clinical utility.  No claims of actual clinical utility are made in this case, but the number of likely clinically utilitarian applications of AI models will be looked at.  Beyond this, models that have been verified to either help physicians improve diagnosis or perform similar to physicians are more likely to be clinically meaningful.
+
+```{r Principle 2}
+ggplot(datafile, aes(x = meaningful)) +
+  geom_bar(fill = "red") +
+  labs(x = "Model meaningful application Group",
+       y = "Number of Instances",
+       title = "Model Meaningfulness")
+
+ggplot(datafile, aes(x = physician)) +
+  geom_bar(fill = "red") +
+  labs(x = "Model Analysis Alongside Physicians",
+       y = "Number of Instances",
+       title = "Physician Benchmarking")
+
+# Table of Relationship Between Above Graphs
+table(datafile$meaningful, datafile$physician, useNA = "ifany") %>%
+  kable()
+```
+
+`r 23/36 * 100`% of models were not available at all.
+`r 8/36 * 100`% of models were available in a paid format.  Pricing was not immediately available.
+`r 1/36 * 100`% of models were not directly available, but could be shortly reconstituted via materials on github.
+`r 4/36 * 100`% of models were publicly freely available
+
+For model retrainability:
+`r 3/36 * 100`% of models did not utilize a custom interface, and instead required terminal interaction of some sort.
+`r 7/36 * 100`% of models did utilize a custom interface of some sort.
+`r 26/36 * 100`% of models could not be verified on whether they utilized custom interfaces for the end user.
+
+# Principle 3: AI tools should aim to reduce overdiagnosis and overtreatment
+
+This principle is based on the idea that overdiagnosis and overtreatment can create stress and indirectly harm patients.  While the models analyzed don't look at this directly, this can be related to meaningfulness of models, as models that are clinically meaningful are more likely to reduce overdiagnosis and overtreatment than models that don't.
+
+```{r Principle 3}
+ggplot(datafile, aes(x = meaningful)) +
+  geom_bar(fill = "red") +
+  labs(x = "Model meaningful application Group",
+       y = "Number of Instances",
+       title = "Model Meaningfulness")
+```
+
+# Principle 4: AI tools should aspire to have high healthcare value and avoid diverting resources from higher-priority areas
+
+This principle is based on the idea that healthcare tools should provide the same outcomes for cheaper, or better outcomes for the same cost.  Fiscal analysis was not addressed as a major part in the papers that were analyzed, and thus cannot be accurately addressed here.
+
+# Principle 5: AI tools should consider the biographical drivers of health
+
+Both social determinants of health and and biological demographics can drive health outcomes.  While these were not generally directly addressed in the models, by allowing for models to be retrained, the greatest capacity to control for biological drivers of health is achieved.  A model being pretrained can also provide this control.
+
+```{r Principle 5}
+ggplot(datafile2, aes(x = pretrained)) +
+  geom_bar(fill = "red") +
+  labs(x = "Model Pretraining Group",
+       y = "Number of Instances",
+       title = "Model Pretraining Status")
+
+ggplot(datafile2, aes(x = retrainable)) +
+  geom_bar(fill = "red") +
+  labs(x = "Model Retrainability Group",
+       y = "Number of Instances",
+       title = "Model Retrainability Status")
+
+# Table of Relationship Between Above Graphs
+table(datafile2$pretrained, datafile2$retrainable, useNA = "ifany") %>%
+  kable()
+
+# Table of Relationship Between retrainability and availability
+table(datafile2$publicly_available, datafile2$retrainable, useNA = "ifany") %>%
+  kable()
+```
+
+
+# Principle 6: AI tools should be designed to be easily tailored to the local population
+
+Model should be able to be tailored to the local population, rather than always using a broad population (model that can be specific to local population is prefereable to hyper general model).  This can be measured through retrainability, where local physicians can cater the model to the local demographic.
+
+```{r Principle 6}
+ggplot(datafile2, aes(x = retrainable)) +
+  geom_bar(fill = "red") +
+  labs(x = "Model Retrainability Group",
+       y = "Number of Instances",
+       title = "Model Retrainability Status")
+```
+
+# Principle 7: AI tools should promote a learning healthcare system
+
+The idea behind this principle is that models should be set up in such a way that they can be monitored for issues and regularly receive training updates in order to progressively improve the model.  No papers proposed sufficient methods for testing or observing this beyond standard ROC curves.  Retrainability is peripherally connected to this metric.
+
+```{r Principle 7}
+ggplot(datafile2, aes(x = retrainable)) +
+  geom_bar(fill = "red") +
+  labs(x = "Model Retrainability Group",
+       y = "Number of Instances",
+       title = "Model Retrainability Status")
+```
+
+# Principle 8: AI tools should facilitate shared decision-making
+
+The idea behind this principle is that models should aid in the shared decision making process between physicians and patients, rather than being inscrutable black boxes.  This metric is not well explorable through the present data, as while models were normally trained on patient data, they were mostly not deployed in clinical settings.
+
+# Overall Adherence
+
+```{r Conclusions}
+
+Adherence <- data.frame(c("Principle 1","Principle 2","Principle 3","Principle 4","Principle 5","Principle 6","Principle 7","Principle 8"), c('19.4%', '42.9%', 'Up to 54.8%', 'Not Characterized', '8.3%', 'Up to 22.2%', 'Not Characterized *** (Up to 8.3%)', 'Not Characterized'))
+colnames(Adherence) <- c("Principle","Adherence")
+Adherence %>% kable()
+```
+
+
